@@ -1,6 +1,6 @@
 
 from path_picture import Pathpicture
-from famland_traversal import Coordinateself
+from farmland_traversal import Coordinateself
 import math
 import yaml
 
