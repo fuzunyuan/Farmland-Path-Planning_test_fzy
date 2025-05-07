@@ -1,6 +1,6 @@
 
 from path_picture import Pathpicture
-from farmland_traversal import Coordinateself
+from farmland_path_planning import Coordinateself
 import math
 import yaml
 
