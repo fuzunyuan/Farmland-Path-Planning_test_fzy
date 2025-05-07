@@ -1,5 +1,5 @@
 import math
-
+import numpy as np
 class Coordinateself:
 #--------------------------------------------------------------------------
 # 坐标转换函数
@@ -81,7 +81,7 @@ class Coordinateself:
 #--------------------------------------------------------------------------
     def move_horizontally(self,line_equations, with_co, y_plass, limit3,limit4):
     # 计算线性方程
-        line_equation =self.small_quad(line_equations, with_co)
+        line_equation =self.small_quad_xiao(line_equations, with_co)
         l2 = line_equation[1]
         l3 = line_equation[2]
         l4 = line_equation[3]
@@ -134,11 +134,7 @@ class Coordinateself:
         angle_2 = math.atan(l2[0])
         angle_3 = math.atan(l3[0])
         angle_4 = math.atan(l4[0])
-        # 计算移动距离
-        # move_2 = abs(with_co / math.sin(angle_2))
-        # move_3 = abs(with_co / math.sin(angle_3))
-        # move_4 = abs(with_co / math.sin(angle_4))
-
+       
         y_1 = with_co
         # y_2 = move_2/l2[0]
         if l2[0] < 0:
@@ -156,6 +152,37 @@ class Coordinateself:
         line_equ_new =  [(x, y + y_list[i]) for i, (x, y) in enumerate(line_equations)]
         return line_equ_new
 #--------------------------------------------------------------------------
+
+    def small_quad_xiao(self,line_equations, with_c):
+        # 返回一个小四边形
+        with_co = with_c/2
+        l2 = line_equations[1]
+        l3 = line_equations[2]
+        l4 = line_equations[3]
+        #  x 轴的夹角（弧度）
+        angle_2 = math.atan(l2[0])
+        angle_3 = math.atan(l3[0])
+        angle_4 = math.atan(l4[0])
+       
+        y_1 = with_co
+        # y_2 = move_2/l2[0]
+        if l2[0] < 0:
+            y_2 = -abs(with_co/math.cos(angle_2))
+        else:
+            y_2 = abs(with_co/math.cos(angle_2))
+        y_3 = -abs(with_co/math.cos(angle_3))
+        if l4[0] <0:
+            y_4 = abs(with_co/math.cos(angle_4))
+        else:
+            y_4 = -abs(with_co/math.cos(angle_4))
+        
+        y_list = [y_1,y_2,y_3,y_4]
+
+        line_equ_new =  [(x, y + y_list[i]) for i, (x, y) in enumerate(line_equations)]
+        return line_equ_new
+#--------------------------------------------------------------------------
+
+
     # 计算了两条直线的交点
     def find_Xpoint(self,line1, line2):
         m1, b1 = line1
@@ -187,7 +214,7 @@ class Coordinateself:
         m2, b2 = line_equations[0]
         intersection = intersection_point(m1, b1, m2, b2)
         b.append(intersection)
-        c=(b[3][0]+with_co / math.sin(math.atan(line_equations[3][0])),b[3][1])
+        c=(b[3][0]+abs(with_co / math.sin(math.atan(line_equations[3][0]))),b[3][1])
         b.reverse()
         b.append(c)
         return b
@@ -201,9 +228,15 @@ class Coordinateself:
             b=self.intersection_points(equ_i,with_co)
             if (b[3][0]-b[0][0])<=with_co and (b[2][0]-b[1][0])<with_co:
                 a=100
+                c.append(b[0])
+                c.append(b[1])
+                
             else:
                 if (b[1][1]-b[0][1])<with_co and (b[2][1]-b[3][1])<with_co:
                     a=100
+                    c.append(b[0])
+                    c.append(b[1])
+                    
                 else:
                     a=0
                     line_equations = equ_i
@@ -225,7 +258,7 @@ class Coordinateself:
 # 直接生成s型路径--------------------------------------------------------------------------------------
     def s_rote(self,or_points,working_wide):
         with_co = working_wide
-        y_plass = working_wide
+        y_plass = working_wide/2
         points,angel_for_back = self.transform(or_points)
         line_equations = self.calculate_line_equations(points)
         limit3y = points[2][1]
@@ -243,10 +276,10 @@ class Coordinateself:
         list5 = self.complete_path(list_max, list_he)
         dx = float(or_points[0][0] )
         dy = float(or_points[0][1] ) 
-        # 使用列表推导式来更新列表a中的点
-        po = self.back_transform(list5, -angel_for_back)
-        path_list  = [(ax + dx, ay + dy) for ax, ay in po ]
-        return path_list,angel_for_back
+        # 使用列表推导式来更新列表a中的点,旋转，平移
+        # po = self.back_transform(list5, -angel_for_back)
+        # list5  = [(ax + dx, ay + dy) for ax, ay in po ]
+        return list5,angel_for_back
 # 直接生成s型路径--------------------------------------------------------------------------------------
 
 
@@ -259,9 +292,122 @@ class Coordinateself:
         p =self.loop (line_equations,with_co)
         dx = float(or_points[0][0] )
         dy = float(or_points[0][1] ) 
-
+# 旋转，平移
         po = self.back_transform(p, -angel_for_back)
         path_list  = [(ax + dx, ay + dy) for ax, ay in po ]
+
         return path_list 
 # 直接生成o型路径------------------------------------------------------------------------------------
 
+# ABC和角度提取点提取
+    def point_extraction(self,security_route,d):
+        list_all=[]
+        def process_points(A, B, C):
+    # 计算线段AC和线段AB的角度
+            angle_AC = math.atan2(C[1] - A[1], C[0] - A[0])
+            angle_AB = math.atan2(B[1] - A[1], B[0] - A[0])
+            # 计算角CAB的度数
+            angle_CAB_radians = abs(angle_AB - angle_AC)
+            # 如果角CAB超过pi（180度），则需要进行调整，因为我们寻找的是内角
+            if angle_CAB_radians > math.pi:
+                angle_CAB_radians = 2 * math.pi - angle_CAB_radians
+            # 将弧度转换为度数
+            # angle_CAB_degrees = math.degrees(angle_CAB_radians)
+            return angle_CAB_radians
+        for i in range(0, len(security_route) - 2, 2):
+            A = security_route[i+1]
+            B = security_route[i+2]
+            C = security_route[i]
+            angel=process_points(A, B, C)
+            dx=C[0]-A[0]
+            list_c,midle=self.interpolate_points_on_arc(A, B,angel,d)
+            po_num = int(d/2)
+            if angel >= 1.57:
+                po_ns = 4*po_num
+                po_n = po_num
+            else:
+                po_ns = po_num
+                po_n = 4*po_num
+            points1=self.interpolate_points_on_circle(list_c[0][0],list_c[0][1],list_c[0][2],midle,po_ns,dx)
+            points2=self.interpolate_points_on_circle(list_c[1][0],list_c[1][1],midle,list_c[1][2],po_n,dx)
+            # print(angel,po_ns,po_n)
+            points_ALL=points1+points2
+            points_ALL.insert(0,A)
+            points_ALL.append(B)
+            list_all+=points_ALL
+            
+        return list_all
+    # 传入圆心，半径，起始点，结束点，插值数量进行插值
+    def interpolate_points_on_circle(self,center, radius, point1, point2, num_points, dx):
+        angle1 = np.arctan2(point1[1] - center[1], point1[0] - center[0])
+        angle2 = np.arctan2(point2[1] - center[1], point2[0] - center[0])
+        
+        # 根据dx判断方向
+        if dx > 0:  # 顺时针
+            if angle2 > angle1:
+                angle2 -= 2 * np.pi
+        else:       # 逆时针
+            if angle2 < angle1:
+                angle2 += 2 * np.pi    
+        # 创建角度数组
+        angles = np.linspace(angle1, angle2, num_points + 1)
+        # 计算坐标
+        x_coords = center[0] + radius * np.cos(angles)
+        y_coords = center[1] + radius * np.sin(angles)
+        # 获取插值点，去除起始点的重复
+        points = list(zip(x_coords[1:], y_coords[1:]))
+        return points
+# 各个圆心计算
+    def interpolate_points_on_arc(self,A, B, ang_le ,d):
+        x1, y1 = A
+        x2, y2 = B
+        l_distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+        def angle_with_y_axis(po1, po2):
+            x11,y11 = po1
+            x22,y22 =po2
+            if x22 - x11 == 0:  # 防止除以零的情况
+                return 0.0 if y11 == y22 else math.pi / 2
+            slope = (y22 - y11) / (x22 - x11)
+            angle_with_x_axis = math.atan(abs(slope))
+            angle_with_y_axis = math.pi / 2 - angle_with_x_axis
+            return angle_with_y_axis
+        
+        if ang_le >= 1.57:
+            rb=0.25*d*math.sin(ang_le)
+            ra=0.5*abs(l_distance/(math.sin(ang_le)))-rb
+            orb=(x2,y2-rb)
+            ora=(x1,y1+ra)
+            l_c = math.sqrt((x2 - x1)**2+(y2-y1-rb)**2)
+            an=angle_with_y_axis(orb, A)
+            r3 = abs((l_c*l_c -rb*rb)/(2*(l_c*math.cos(an)-rb)))
+            or3=(x1,y1+r3)
+            list2=[[or3,r3,A],[orb,rb,B]]
+            mide=self.tangent_points(list2[0][0], list2[0][1], list2[1][0], list2[1][1])
+            # print(list2[0],'2')
+            return list2,mide
+        else:
+            ra=0.25*d*math.sin(ang_le)
+            rb=0.5*abs(l_distance/(math.sin(ang_le)))-ra
+            ora=(x1,y1+ra)
+            
+            orb=(x2,y2-rb)
+            l_c = math.sqrt((x2 - x1)**2+(y2-y1-ra)**2)
+            an=angle_with_y_axis(ora, B)
+            r3 = abs((l_c*l_c -ra*ra)/(2*(l_c*math.cos(an)-ra)))
+            or3=(x2,y2-r3)
+            
+            list2=[[ora,ra,A],[or3,r3,B]]
+            # print(list2[0])
+            mide=self.tangent_points(list2[1][0], list2[1][1], list2[0][0], list2[0][1])
+            return list2,mide
+# 计算切点
+    def tangent_points(self,c1, r1, c2, r2):
+        # 计算两个圆心之间的距离
+        distance = ((c2[0] - c1[0]) ** 2 + (c2[1] - c1[1]) ** 2) ** 0.5
+        dx, dy = c2[0] - c1[0], c2[1] - c1[1]
+        # 单位向量
+        unit_dx, unit_dy = dx / distance, dy / distance
+        # 切点坐标计算
+        point1 = (c1[0] + r1 * unit_dx, c1[1] + r1 * unit_dy)
+        
+        return point1
